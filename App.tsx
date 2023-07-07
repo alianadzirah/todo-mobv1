@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   StyleSheet,
@@ -7,13 +7,11 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  Alert,
 } from "react-native";
 
 interface IToDo {
   text: string;
   completed: boolean;
-  id: number;
 }
 
 export default function App() {
@@ -26,8 +24,6 @@ export default function App() {
   const [oriEditText, setOriEditText] = useState<string>("");
   const [anyUndo, setAnyUndo] = useState<Boolean>(false);
   const [tasksUndo, setTasksUndo] = useState<IToDo[]>([]);
-  const [keyNum, setKeyNum] = useState(0);
-  
 
   const editTaskHandler = () => {
     console.log("Edit text ID: " + taskIDEdit);
@@ -49,18 +45,7 @@ export default function App() {
       setEditTask("");
       console.log("edited");
     } else {
-      Alert.alert("Empty task!", "Please insert task", [
-        {
-          text: "Cancel",
-          onPress: () => console.log("Cancel Pressed"),
-          style: "cancel",
-        },
-        { text: "OK", onPress: () => console.log("OK Pressed") },
-      ]);
-      
-      showEdit(true);
-      //showError(true);
-      setAnyUndo(false);
+      showError(true);
       console.log("not edit");
     }
   };
@@ -68,67 +53,34 @@ export default function App() {
   const handleSubmit = (): void => {
     if (value.trim()) {
       //setAnyUndo(true);
-      setKeyNum(keyNum + 1);
-      console.log("item id: ", keyNum);
-      setToDos([...toDoList, { text: value, completed: false, id: keyNum }]);
-    } else {
-      showError(true);
-      Alert.alert("Empty task!", "Please insert task", [
-        {
-          text: "Cancel",
-          onPress: () => console.log("Cancel Pressed"),
-          style: "cancel",
-        },
-        { text: "OK", onPress: () => console.log("OK Pressed") },
-      ]);
-    }
+      setToDos([...toDoList, { text: value, completed: false }]);
+    } else showError(true);
     setValue("");
 
     console.log("id:", toDoList);
   };
 
-  const removeItem = (keyNum: number): void => {
-    console.log(keyNum);
+  const removeItem = (index: number): void => {
+    console.log(index);
     setTasksUndo(toDoList);
     setAnyUndo(true);
-    //const newToDoList = [...toDoList];
-    setToDos((prevToDo) => {
-      return prevToDo.filter((toDo) => toDo.id !== keyNum);
-    });
-    //newToDoList.splice(keyNum, 1);
-    //setToDos(newToDoList);
+    const newToDoList = [...toDoList];
+    newToDoList.splice(index, 1);
+    setToDos(newToDoList);
   };
 
-  const toggleComplete = (keyNum: number) => {
+  const toggleComplete = (index: number): void => {
     setAnyUndo(true);
-    //const newToDoList = [...toDoList];
-    //newToDoList[keyNum].completed = !newToDoList[keyNum].completed;
-    //console.log(newToDoList[keyNum].completed)
-
     setTasksUndo(toDoList);
-    const newTask = toDoList.map((toDo) => {
-      // id same then update the data with new data (complete) !task.complete to be safe since only true or false
-      if (toDo.id === keyNum) {
-        //if (!completed)
-        return { ...toDo, completed: !toDo.completed };
-      }
-
-      // if not the same then just send the before change
-      return toDo;
-    });
-    setToDos(newTask);
-    //setTasksUndo(newTask);
+    const newToDoList = [...toDoList];
+    newToDoList[index].completed = !newToDoList[index].completed;
+    console.log(newToDoList[index].completed)
+    setToDos(newToDoList);
   };
 
   const undoHandler = () => {
     setToDos(tasksUndo);
-    console.log("edited task: ", toDoList);
     setAnyUndo(false);
-  };
-
-  const closeHandler = () => {
-    setAnyUndo(false);
-    //showEdit(false);
   };
 
   return (
@@ -173,12 +125,9 @@ export default function App() {
               </View>
             )}
             {anyUndo && (
-              <View style={styles.rowWrapper}>
+              <View style={styles.inputWrapper}>
                 <Pressable style={styles.buttonAdd} onPress={undoHandler}>
                   <Ionicons name="arrow-undo" size={30} color="white" />
-                </Pressable>
-                <Pressable style={styles.buttonAdd} onPress={closeHandler}>
-                  <Ionicons name="close" size={30} color="white" />
                 </Pressable>
               </View>
             )}
@@ -186,17 +135,17 @@ export default function App() {
         </View>
 
         <View style={styles.container}>
-          {/* {error && <Text style={styles.error}>Empty task!</Text>} */}
+          {error && <Text style={styles.error}>Empty task!</Text>}
           {toDoList.length === 0 && (
             <Text style={styles.informStyle}>
               You don't have any task to do now
             </Text>
           )}
-          {toDoList.map((toDo: IToDo, keyNum: number) => (
-            <View style={styles.listItem} key={`${keyNum}_${toDo.text}`}>
+          {toDoList.map((toDo: IToDo, index: number) => (
+            <View style={styles.listItem} key={`${index}_${toDo.text}`}>
               <Pressable
                 onPress={() => {
-                  toggleComplete(keyNum);
+                  toggleComplete(index);
                 }}
               >
                 <Ionicons
@@ -220,7 +169,7 @@ export default function App() {
               </Text>
               <Pressable
                 onPress={() => {
-                  setTaskIDEdit(keyNum);
+                  setTaskIDEdit(index);
                   setOriEditText(toDo.text);
                   showEdit(true);
                 }}
@@ -229,7 +178,7 @@ export default function App() {
               </Pressable>
               <Pressable
                 onPress={() => {
-                  removeItem(keyNum);
+                  removeItem(index);
                 }}
               >
                 <Ionicons
@@ -273,11 +222,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
-  },
-  rowWrapper: {
-    width: "30%",
-    flexDirection: "row",
-    justifyContent: "space-evenly",
   },
   inputBox: {
     width: 250,
